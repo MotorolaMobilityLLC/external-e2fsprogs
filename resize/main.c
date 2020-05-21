@@ -252,6 +252,7 @@ int main (int argc, char ** argv)
 	int		flags = 0;
 	int		flush = 0;
 	int		force = 0;
+	int		reserved = 0;
 	int		io_flags = 0;
 	int		force_min_size = 0;
 	int		print_min_size = 0;
@@ -285,7 +286,7 @@ int main (int argc, char ** argv)
 	if (argc && *argv)
 		program_name = *argv;
 
-	while ((c = getopt(argc, argv, "d:fFhMPpS:bsz:")) != EOF) {
+	while ((c = getopt(argc, argv, "d:fFhMPpS:bsz:e:")) != EOF) {
 		switch (c) {
 		case 'h':
 			usage(program_name);
@@ -319,6 +320,9 @@ int main (int argc, char ** argv)
 			break;
 		case 'z':
 			undo_file = optarg;
+			break;
+		case 'e':
+			reserved = atoi(optarg);
 			break;
 		default:
 			usage(program_name);
@@ -509,6 +513,16 @@ int main (int argc, char ** argv)
 		}
 	} else {
 		new_size = max_size;
+
+		printf(_("Max filesystem length is %llu blocks\n"), new_size);
+		/* If footer encryption enabled, skip the last 16K */
+		if (reserved) {
+			new_size -= reserved/blocksize;
+			printf(_("resize2fs, Encryption reserve %dK,"
+				"set the max filesystem length to %llu blocks\n"),
+				reserved/1024, new_size);
+		}
+
 		/* Round down to an even multiple of a pagesize */
 		if (sys_page_size > blocksize)
 			new_size &= ~((blk64_t)((sys_page_size / blocksize)-1));
